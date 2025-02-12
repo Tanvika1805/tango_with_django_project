@@ -1,4 +1,5 @@
 import os
+import random
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tango_with_django_project.settings')
 import django
 django.setup()
@@ -30,31 +31,35 @@ def populate():
     }
 
     for cat, cat_data in cats.items():
-        c = add_cat(cat, cat_data['views'], cat_data['likes'])
+        c = add_cat(cat, cat_data['views'], cat_data['likes'])  # Add the category
         for p in cat_data['pages']:
-            add_page(c, p['title'], p['url'])
+            # Assign a random views count for each page (greater than zero)
+            page_views = random.randint(5, 100)
+            add_page(c, p['title'], p['url'], views=page_views)
 
     # Print out the categories we have added.
     for c in Category.objects.all():
         for p in Page.objects.filter(category=c):
-            print(f'- {c.name}: {p.title} ({p.url})')
+            print(f'- {c.name}: {p.title} ({p.url}, {p.views} views)')
 
 
 def add_page(cat, title, url, views=0):
     p = Page.objects.get_or_create(category=cat, title=title)[0]
-    p.url=url
-    p.views=views
+    p.url = url
+    p.views = views  # Make sure views are passed correctly
     p.save()
     return p
+
 
 def add_cat(name, views=0, likes=0):
     c, created = Category.objects.get_or_create(name=name, defaults={'views': views, 'likes': likes})
     
     # Update values if the category already exists
     if not created:
-        c.views = views
-        c.likes = likes
+        c.views = max(c.views, views)
+        c.likes = max(c.likes, likes)
         c.save()
+
     return c
 
 if __name__ == '__main__':
