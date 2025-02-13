@@ -18,9 +18,9 @@ def about(request):
     return HttpResponse("Rango says here is the about page. <br><a href='/rango/'>Back to Index</a>")
     
 def index(request):
-
-    category_list = Category.objects.order_by('-likes')[:5]
-    most_viewed_pages = Page.objects.order_by('-views')[:5]
+    category_list = Category.objects.exclude(name='Test').order_by('-likes')[:5]
+    
+    most_viewed_pages = Page.objects.exclude(title='Test').order_by('-views')[:5]
 
     context_dict = {}
     context_dict['boldmessage'] = 'Crunchy, creamy, cookie, candy, cupcake!'
@@ -30,6 +30,7 @@ def index(request):
     # Render the response and send it back!
     return render(request, 'rango/index.html', context=context_dict)
 
+
 def show_category(request, category_name_slug):
     context_dict = {}
 
@@ -37,8 +38,8 @@ def show_category(request, category_name_slug):
         # Fetch the category using the slug provided.
         category = Category.objects.get(slug=category_name_slug)
 
-        # Fetch the pages related to the category.
-        pages = Page.objects.filter(category=category)
+        # Fetch the pages related to the category excluding "Test" and limit the pages to the top 5 based on views.
+        pages = Page.objects.filter(category=category).exclude(title='Test').order_by('-views')[:5]
 
         # Add category and pages to context.
         context_dict['category'] = category
@@ -51,6 +52,7 @@ def show_category(request, category_name_slug):
 
     # Render the template with context.
     return render(request, 'rango/category.html', context_dict)
+
 
 
 @login_required
