@@ -18,6 +18,7 @@ def index(request):
 def about(request):
     visitor_cookie_handler(request)  # Ensure cookies are updated before retrieving visits
     visits = request.session.get('visits', 1)  # Retrieve visits count
+    return render(request, 'rango/about.html', {'visits': visits})
 
     if request.session.test_cookie_worked():
         print("TEST COOKIE WORKED!")
