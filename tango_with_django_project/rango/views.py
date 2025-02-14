@@ -246,7 +246,7 @@ def visitor_cookie_handler(request):
         request.session['last_visit'] = last_visit_cookie  # Preserve last visit time
 
     request.session['visits'] = visits  # Update visit count
-    request.session.modified = True  # Ensure Django saves session data
+    request.session.modified = True 
 
 
 
