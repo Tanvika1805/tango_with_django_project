@@ -10,14 +10,24 @@ from rango.forms import UserForm, UserProfileForm
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
+from datetime import datetime
 
 def index(request):
     return HttpResponse("Rango says hey there partner! <br><a href='/rango/about/'>About Page</a>")
 
 def about(request):
-    return HttpResponse("Rango says here is the about page. <br><a href='/rango/'>Back to Index</a>")
+    visitor_cookie_handler(request)  # Ensure cookies are updated before retrieving visits
+    visits = request.session.get('visits', 1)  # Retrieve visits count
+
+    if request.session.test_cookie_worked():
+        print("TEST COOKIE WORKED!")
+        request.session.delete_test_cookie()
+
+    return HttpResponse(f"Rango says here is the about page. <br>Visits: {visits} <br><a href='/rango/'>Back to Index</a>")
+
     
 def index(request):
+
     category_list = Category.objects.exclude(name='Test').order_by('-likes')[:5]
     
     most_viewed_pages = Page.objects.exclude(title='Test').order_by('-views')[:5]
@@ -27,8 +37,11 @@ def index(request):
     context_dict['categories'] = category_list
     context_dict['most_viewed_pages'] = most_viewed_pages
 
-    # Render the response and send it back!
-    return render(request, 'rango/index.html', context=context_dict)
+    visitor_cookie_handler(request)
+    context_dict['visits'] = request.session.get('visits', 1)
+    
+    response = render(request, 'rango/index.html', context=context_dict)
+    return response
 
 
 def show_category(request, category_name_slug):
@@ -205,6 +218,38 @@ def user_logout(request):
 @login_required
 def restricted(request):
     return render(request, 'rango/restricted.html')
+
+
+def get_server_side_cookie(request, cookie, default_val=None):
+    val = request.session.get(cookie)
+    if not val:
+        val = default_val
+    return val
+
+# Updated the function definition
+from datetime import datetime
+
+def visitor_cookie_handler(request):
+    visits = int(get_server_side_cookie(request, 'visits', '1'))  # Ensure integer conversion
+    last_visit_cookie = get_server_side_cookie(request, 'last_visit', str(datetime.now()))
+
+    if last_visit_cookie:
+        last_visit_time = datetime.strptime(last_visit_cookie[:-7], '%Y-%m-%d %H:%M:%S')
+    else:
+        last_visit_time = datetime.now()
+
+    # If it's been more than a day since the last visit, increment the count
+    if (datetime.now() - last_visit_time).days > 0:
+        visits += 1
+        request.session['last_visit'] = str(datetime.now())  # Update last visit time
+    else:
+        request.session['last_visit'] = last_visit_cookie  # Preserve last visit time
+
+    request.session['visits'] = visits  # Update visit count
+    request.session.modified = True  # Ensure Django saves session data
+
+
+
 
 
 # Create your views here.
